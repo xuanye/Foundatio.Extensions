@@ -1,2 +1,7 @@
-关于Foundatio的一些扩展，使用到啥写啥吧
+关于Foundatio的一些扩展
 ----
+
+
+## Foundatio.Kafka
+[Foundatio Messaging](https://github.com/FoundatioFx/Foundatio)的Kafka实现
+
