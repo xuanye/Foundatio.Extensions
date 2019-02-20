@@ -3,11 +3,25 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Foundatio</RootNamespace>
+    <Description>Foundatio.Kafka是基于是Foundatio MessageBus的kafka实现</Description>
+    <Copyright>Xuanye @ 2018</Copyright>
+    <Authors>Xuanye</Authors>
+    <AssemblyTitle>Foundatio Kafka</AssemblyTitle>
+    <AssemblyName>Foundatio.Kafka</AssemblyName>
+    <PackageId>DotBPE.Extensions.Kafka</PackageId>
+    <Version>$(VersionSuffix)</Version>
+    <PackageTags>Foundatio Kafka</PackageTags>
+    <PackageReleaseNotes>Foundatio Kafka</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/xuanye/Foundatio.Extensions</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/xuanye/Foundatio.Extensions/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl></RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="0.11.5" />
-    <PackageReference Include="Foundatio" Version="7.0.1706" />
+    <PackageReference Include="Confluent.Kafka" Version="0.11.6" />
+    <PackageReference Include="Foundatio" Version="7.1.1845" />
   </ItemGroup>
 
 </Project>

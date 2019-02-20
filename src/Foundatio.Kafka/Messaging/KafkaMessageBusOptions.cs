@@ -48,7 +48,7 @@ namespace Foundatio.Messaging
     {
         Producer = 1,
         Consumer = 2,
-        Both = 3,
+        Both = 3
     }
 
     public class KafkaMessageBusOptionsBuilder : SharedMessageBusOptionsBuilder<KafkaMessageBusOptions, KafkaMessageBusOptionsBuilder>
