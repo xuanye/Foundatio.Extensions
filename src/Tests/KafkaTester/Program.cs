@@ -1,5 +1,9 @@
-﻿using System;
-using Foundatio.Messaging;
+﻿using Foundatio.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace KafkaTester
 {
@@ -7,48 +11,55 @@ namespace KafkaTester
     {
         private static void Main(string[] args)
         {
-            IMessageBus producer = new KafkaMessageBus(new KafkaMessageBusOptions()
-            {
-                BootStrapServers = "127.0.0.1:9092",
-                ClientMode = ClientMode.Producer,
-                GroupId = "TESTCLIENT",
-                Topic = "TESTTOPIC"
-            });
+            //已经在项目文件中设置了
+            //System.Threading.ThreadPool.SetMinThreads(100, 100);
 
-            IMessageBus consumer = new KafkaMessageBus(new KafkaMessageBusOptions()
-            {
-                BootStrapServers = "127.0.0.1:9092",
-                ClientMode = ClientMode.Consumer,
-                AutoCommitIntervalMS = 5000,
-                AutoOffSetReset = "earliest",
-                GroupId = "TESTCLIENT",
-                Topic = "TESTTOPIC"
-            });
+            //任务系统出错的情况
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-            //consumer.SubscribeAsync<KafkaMessage>(msg => Console.WriteLine("{0},{1}", msg.MessageId, msg.Content));
-            Console.WriteLine("consumer ready");
-            while (true)
-            {
-                Console.WriteLine("请输入你需要发送的消息:");
-                var content = Console.ReadLine();
-                if (content == "quit")
+            // 创建Host ，这里可以进一步简化
+            var host = new HostBuilder()
+                .ConfigureLogging((context, factory) =>
                 {
-                    break;
-                }
-                producer.PublishAsync(new KafkaMessage()
+                    factory.SetMinimumLevel(LogLevel.Warning);
+                    factory.AddConsole();
+                })
+                .ConfigureServices(service =>
                 {
-                    MessageId = Guid.NewGuid().ToString("N"),
-                    Content = content
+                    service.Configure<KafkaMessageBusOptions>(o =>
+                    {
+                      
+                    });
+                    service.AddSingleton<IMessageBus>( p =>
+                    {
+                        var options = new KafkaMessageBusOptions
+                        {
+                            ClientMode = ClientMode.Both,
+                            BootStrapServers = "127.0.0.1:9092",
+                            GroupId = "FTestGroup",
+                            Topic = "FTestTopic",
+                            AutoCommitIntervalMS = 5000,
+                            AutoOffSetReset = "earliest"
+                        };
+                        return new KafkaMessageBus(options, p.GetRequiredService<ILoggerFactory>());
+                    });
+
+                    service.AddHostedService<MessageBusConsumeService>();
+                    service.AddHostedService<MessageBusProduerService>();
                 });
-            }
-            Console.WriteLine("Hello World!");
+
+            host.RunConsoleAsync().Wait();
         }
-    }
 
-    public class KafkaMessage
-    {
-        public string MessageId { get; set; }
-
-        public string Content { get; set; }
+        private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            try
+            {
+                Console.WriteLine(e.Exception.ToString());
+            }
+            catch
+            {
+            }
+        }
     }
 }

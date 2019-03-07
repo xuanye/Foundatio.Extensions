@@ -1,6 +1,7 @@
 ﻿using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,28 +10,38 @@ using System.Threading.Tasks;
 
 namespace KafkaTester
 {
-    public class MessageBusConsumerService : IHostedService
+    public class MessageBusConsumeService : IHostedService
     {
-        private IMessageBus _MessageBus;
-        private readonly IServiceProvider _serviceProvider;
 
-        public MessageBusConsumerService(IServiceProvider serviceProvider)
+        private readonly IMessageBus _messageBus;     
+        private readonly ILogger<MessageBusConsumeService> _logger;
+
+        public MessageBusConsumeService(IMessageBus messageBus,          
+            ILogger<MessageBusConsumeService> logger)
         {
-            // Since creation == initialization/connection, we delay retrieving the service
-            // until we're asked to start.
-            _serviceProvider = serviceProvider;
+            this._messageBus = messageBus;          
+            this._logger = logger;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _MessageBus = _serviceProvider.GetRequiredService<IMessageBus>();
+
+            this._messageBus.SubscribeAsync<KafkaMessage>(Consume, cancellationToken);
+
+            this._logger.LogInformation("MessageBusConsumeService is Started!");
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _MessageBus?.Dispose();
+            this._messageBus.Dispose();
+            this._logger.LogInformation("MessageBusConsumeService is Stop!");
             return Task.CompletedTask;
+        }
+
+        private void Consume(KafkaMessage item)
+        {
+            this._logger.LogInformation("messageId={messageId},content = {data}", item.MessageId, item.Content);
         }
     }
 }

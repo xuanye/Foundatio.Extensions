@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="0.11.6" />
-    <PackageReference Include="Foundatio" Version="7.1.1845" />
+    <PackageReference Include="Foundatio" Version="8.0.1965" />
   </ItemGroup>
 
 </Project>

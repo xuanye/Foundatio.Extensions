@@ -57,7 +57,7 @@ namespace Foundatio.Messaging
                 }
             }
             if ((options.ClientMode & ClientMode.Producer) == ClientMode.Producer)
-            {
+            {            
                 this._producer = new Producer(realConf);
             }
             if ((options.ClientMode & ClientMode.Consumer) == ClientMode.Consumer)
