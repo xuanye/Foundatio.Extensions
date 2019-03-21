@@ -13,7 +13,7 @@ mkdir -p $artifactsFolder
 
 
 
-versionNumber="1.0.2"
+versionNumber="1.0.3"
 
 dotnet pack ./Foundatio.Kafka/Foundatio.Kafka.csproj -c Release -o ../$artifactsFolder --version-suffix=$versionNumber
 

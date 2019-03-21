@@ -21,7 +21,7 @@ namespace KafkaTester
             var host = new HostBuilder()
                 .ConfigureLogging((context, factory) =>
                 {
-                    factory.SetMinimumLevel(LogLevel.Warning);
+                    factory.SetMinimumLevel(LogLevel.Information);
                     factory.AddConsole();
                 })
                 .ConfigureServices(service =>

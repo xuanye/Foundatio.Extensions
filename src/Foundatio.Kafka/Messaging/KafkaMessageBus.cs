@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Confluent.Kafka.Serialization;
 using Foundatio.AsyncEx;
 using Foundatio.Extensions;
 using Foundatio.Serializer;
@@ -15,15 +16,12 @@ namespace Foundatio.Messaging
 {
     public class KafkaMessageBus : MessageBusBase<KafkaMessageBusOptions>
     {
-        private readonly Producer _producer;
         private readonly Consumer _consumer;
-
         private readonly AsyncLock _lock = new AsyncLock();
-
+        private readonly ILogger<KafkaMessageBus> _mylogger;
+        private readonly Producer _producer;
         private bool _isSubscribed;
         private bool _stopPoll;
-
-        private readonly ILogger<KafkaMessageBus> _mylogger;
         public KafkaMessageBus(KafkaMessageBusOptions options,ILoggerFactory loggerFactory) : base(options)
         {
 
@@ -56,6 +54,24 @@ namespace Foundatio.Messaging
                     }
                 }
             }
+            if (!realConf.ContainsKey("request.timeout.ms"))
+            {
+                realConf.Add("request.timeout.ms", 3000);
+            }
+            if (!realConf.ContainsKey("message.timeout.ms"))
+            {
+                realConf.Add("message.timeout.ms", 5000);
+            }
+            if (!realConf.ContainsKey("queue.buffering.max.ms"))
+            {
+                realConf.Add("queue.buffering.max.ms", 10);
+            }
+            if (!realConf.ContainsKey("socket.blocking.max.ms"))
+            {
+                realConf.Add("socket.blocking.max.ms", 10);
+            }          
+
+
             if ((options.ClientMode & ClientMode.Producer) == ClientMode.Producer)
             {            
                 this._producer = new Producer(realConf);
@@ -69,6 +85,17 @@ namespace Foundatio.Messaging
         public KafkaMessageBus(Builder<KafkaMessageBusOptionsBuilder, KafkaMessageBusOptions> config,ILoggerFactory loggerFactory)
            : this(config(new KafkaMessageBusOptionsBuilder()).Build(),loggerFactory)
         {
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            this._stopPoll = true;
+
+            this._producer?.Dispose();
+            this._consumer?.Dispose();
+
+            this._isSubscribed = false;
         }
 
         protected override async Task EnsureTopicSubscriptionAsync(CancellationToken cancellationToken)
@@ -99,6 +126,31 @@ namespace Foundatio.Messaging
             }
         }
 
+        protected async override Task PublishImplAsync(string messageType, object message, TimeSpan? delay, CancellationToken cancellationToken)
+        {
+            var mappedType = GetMappedMessageType(messageType);
+
+            if (delay.HasValue && delay.Value > TimeSpan.Zero)
+            {
+                this._logger.LogTrace("Schedule delayed message: {MessageType} ({Delay}ms)", messageType, delay.Value.TotalMilliseconds);
+
+                await AddDelayedMessageAsync(mappedType, message, delay.Value).AnyContext();
+
+                return;
+            }
+
+            this._logger.LogTrace("Message Publish: {MessageType}", messageType);
+
+            byte[] data = this._serializer.SerializeToBytes(new MessageBusData
+            {
+                Type = messageType,
+                Data = this._serializer.SerializeToBytes(message)
+            });
+
+
+            await this._producer.ProduceAsync(this._options.Topic, null, data).AnyContext();
+        }
+
         private void OnConsumeError(object sender, Message msg)
         {
             this._mylogger.LogError("OnConsumeError, Message ={msg}", msg);
@@ -117,7 +169,7 @@ namespace Foundatio.Messaging
 
             MessageBusData message;
             try
-            {
+            {               
                 message = this._serializer.Deserialize<MessageBusData>(msg.Value);
             }
             catch (Exception ex)
@@ -139,42 +191,5 @@ namespace Foundatio.Messaging
                }
            }).AnyContext();
         }
-
-        protected async override Task PublishImplAsync(string messageType, object message, TimeSpan? delay, CancellationToken cancellationToken)
-        {
-            var mappedType = GetMappedMessageType(messageType);
-
-            if (delay.HasValue && delay.Value > TimeSpan.Zero)
-            {
-                this._logger.LogTrace("Schedule delayed message: {MessageType} ({Delay}ms)", messageType, delay.Value.TotalMilliseconds);
-
-                await AddDelayedMessageAsync(mappedType, message, delay.Value).AnyContext();
-
-                return;
-            }
-
-            this._logger.LogTrace("Message Publish: {MessageType}", messageType);
-
-            byte[] data = this._serializer.SerializeToBytes(new MessageBusData
-            {
-                Type = messageType,
-                Data = this._serializer.SerializeToBytes(message)
-            });
-           
-
-            await this._producer.ProduceAsync(this._options.Topic, null, data).AnyContext();
-        }
-
-        public override void Dispose()
-        {
-            base.Dispose();
-            this._stopPoll = true;
-
-            this._producer?.Dispose();
-            this._consumer?.Dispose();
-
-            this._isSubscribed = false;
-        }
-      
     }
 }

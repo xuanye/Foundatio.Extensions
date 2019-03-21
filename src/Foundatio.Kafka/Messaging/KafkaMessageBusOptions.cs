@@ -6,6 +6,7 @@ namespace Foundatio.Messaging
 {
     public class KafkaMessageBusOptions : SharedMessageBusOptions
     {
+
         /// <summary>
         /// bootstrap.servers
         /// </summary>
